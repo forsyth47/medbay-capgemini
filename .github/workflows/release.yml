@@ -1,0 +1,75 @@
+name: Build & Release APK
+
+on:
+  # MANUAL TRIGGER (current method)
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version tag (e.g. v1.0.5)'
+        required: true
+        default: 'v1.0.0'
+
+  # AUTOMATIC TRIGGER (commented out — uncomment to enable auto-build on push)
+  # push:
+  #   branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # ─── SIGNING SETUP ───
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/upload-keystore.jks
+
+      - name: Create key.properties
+        run: |
+          cat > android/key.properties <<EOF
+          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          storeFile=app/upload-keystore.jks
+          EOF
+
+      # ─── BUILD ───
+      - name: Build signed release APK
+        run: flutter build apk --release
+
+      - name: Prepare release artifact
+        run: |
+          mkdir -p release
+          cp build/app/outputs/flutter-apk/app-release.apk \
+             release/smart-dispenser-${{ github.event.inputs.version }}.apk
+
+      # ─── RELEASE ───
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          name: Smart Dispenser ${{ github.event.inputs.version }}
+          body: |
+            Manually triggered release.
+            Commit: ${{ github.sha }}
+          files: release/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

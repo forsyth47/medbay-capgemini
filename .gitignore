@@ -1,3 +1,7 @@
+# Keystore and its properties file
+android/key.properties
+android/app/zero-keystore.jks
+
 # Miscellaneous
 *.class
 *.log
