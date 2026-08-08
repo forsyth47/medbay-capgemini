@@ -1,0 +1,59 @@
+Btw, I added these two columns to the profile table:
+caregiver_name (text)
+caregiver_designation (text)
+caregiver_phone (text)
+
+then I changed the extra options to make these columns "Define as array", which I also did to emergency_name, emergency_relation, emergency_phone. I did so because there can be more than 1 caregiver or emergency contact, we can show more than 1 caregiver or contact, by for looping the array, also..
+Btw for sample values I added it like ["Priya Sharma"]
+
+Also btw, in medicines table, the id and user_id column's default value was gen_random_uuid() -- I did that for whereever you asked for type uuid, but for profiles id column was auth.uid() -- doesnt matter cause it worked in the app.
+
+Btw, I build it and it worked! except for profile, which gave this in logcat:
+```
+00:19:47.492
+2700/2700
+E
+flutter
+[ERROR:flutter/runtime/dart_vm_initializer.cc(40)] Unhandled Exception: type 'List<dynamic>' is not a subtype of type 'String'
+
+00:19:47.492
+2700/2700
+E
+flutter
+#0      new UserProfile.fromJson (package:Medbay/models/user_profile.dart:34:47)
+00:19:47.492
+2700/2700
+E
+flutter
+#1      SupabaseService.getProfile (package:Medbay/services/supabase_service.dart:70:24)
+00:19:47.492
+2700/2700
+E
+flutter
+<asynchronous suspension>
+00:19:47.492
+2700/2700
+E
+flutter
+#2      _ProfilePageState._load (package:Medbay/pages/profile_page.dart:24:15)
+00:19:47.492
+2700/2700
+E
+flutter
+<asynchronous suspension>
+00:19:47.492
+2700/2700
+E
+flutter
+```
+Understandable cause I changed from string to List.
+
+Few bugs in app.
+- Lotta bottom overflows. Can the `Expanded`, below the 250 height box from the login_page.dart be scrolled? cause it says bottom overflowed by xyz pixels, also when you open keyboard to type, it shows the same. Not sure why? Maybe wrap it in safe area? And also in the medicines_page.dart, the slot card > the tiny circles below the remaining tables, the one which shows how many tablets left, also overflows as well, in the right.
+- And a show password icon would be nice in the login_page.dart
+- In the home page, the Next Medication container, rather than adding static number, it should be rolling numbers, counting down.
+- add proper bottom nav bar in all other pages, rather than redirecting to home then clicking again.
+- In home page, change today's doses to "3/4" from "4/3", and in Today's schedule, the first tablet "Pantoparzole", should be changed to 10.30 AM, and shouldn't be "Taken" state (). And Today's Schedule > Text button "View all", should take to _onNavTap(1)
+
+I want you to replace "Medicine Slots" in quick action to another new page, which is an AI smart prescription scanner and add them to your medication list, in supabase.
+That page should be themed similar to other pages, and should have a button to take photo or add one from gallery, and once the photo is choosen the ai scan will start, which essentially sends the image via post to my backend in localhost or some url, and that app will respond in json, with date, and medications [Name, dose, timing, duration, note], [Metoprol, 20mg, 1-0-1/weekly(text), x7 days, after food], and this parsed Map info should be shown in a nice horizontal cards/containers in a vertical container (similar to medication slots), and for each medication, should should be a buy button on the right, which on press should add the "$medicineInfo 1mg.com near me" string and redirect to google, which will search that medicine from 1mg.com pharmacy shop near them.
