@@ -45,8 +45,15 @@ class _AIPrescriptionScannerPageState extends State<AIPrescriptionScannerPage> {
   String? _prescriptionDate;
   List<ScannedMedicine> _results = [];
 
-  // CHANGE THIS to your backend URL
-  final String _backendUrl = 'http://192.168.1.100:8000/scan'; // localhost example
+  // CHANGED: Single URL → List of fallback URLs
+  // The app will try each one in order until one succeeds.
+  final List<String> _backendUrls = [
+    'http://backend.medbay.ianjosh.eu.org/parse', // Production backup
+    'https://backend.medbay.ianjosh.eu.org/parse',
+    'http://100.82.199.56:8000/parse', //s7-port tailscale
+    'http://100.97.192.102:8000/parse',   // Linux tailscale
+    'http://localhost:8000/parse'       // localhost for testing
+  ];
 
   Future<void> _pickImage(ImageSource source) async {
     final picked = await _picker.pickImage(source: source, imageQuality: 85);
@@ -60,33 +67,56 @@ class _AIPrescriptionScannerPageState extends State<AIPrescriptionScannerPage> {
     }
   }
 
+  // CHANGED: Loops through _backendUrls until one works
   Future<void> _scanImage(XFile file) async {
     setState(() => _scanning = true);
 
-    try {
-      final bytes = await file.readAsBytes();
-      final request = http.MultipartRequest('POST', Uri.parse(_backendUrl));
-      request.files.add(
-        http.MultipartFile.fromBytes('image', bytes, filename: file.name),
-      );
+    Object? lastError;
+    bool success = false;
 
-      final response = await request.send().timeout(const Duration(seconds: 30));
-      final respStr = await response.stream.bytesToString();
+    for (final url in _backendUrls) {
+      try {
+        final bytes = await file.readAsBytes();
+        final request = http.MultipartRequest('POST', Uri.parse(url));
+        request.files.add(
+          http.MultipartFile.fromBytes('image', bytes, filename: file.name),
+        );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(respStr);
-        setState(() {
-          _prescriptionDate = data['date']?.toString();
-          final meds = data['medications'] as List<dynamic>? ?? [];
-          _results = meds.map((m) => ScannedMedicine.fromJson(m)).toList();
-        });
-      } else {
-        _showError('Server error: ${response.statusCode}');
+        final response = await request.send().timeout(const Duration(seconds: 15));
+        final respStr = await response.stream.bytesToString();
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(respStr);
+          setState(() {
+            _prescriptionDate = data['date']?.toString();
+            final meds = data['medications'] as List<dynamic>? ?? [];
+            _results = meds.map((m) => ScannedMedicine.fromJson(m)).toList();
+          });
+          success = true;
+          // show toast/snackbar for success
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Prescription scanned successfully! [$url]')),
+          );
+          break; // Stop trying other URLs once one succeeds
+        } else {
+          // Non-200 from this URL → log it and try next
+          lastError = 'URL $url returned ${response.statusCode}';
+        }
+      } on FormatException catch (e) {
+        // JSON parse error from this URL → try next
+        lastError = 'URL $url bad JSON: $e';
+      } catch (e) {
+        // Network / timeout / connection error → try next
+        lastError = 'URL $url failed: $e';
       }
-    } catch (e) {
-      _showError('Scan failed: $e');
-    } finally {
-      setState(() => _scanning = false);
+    }
+
+    setState(() => _scanning = false);
+
+    if (!success && mounted) {
+      _showError(
+        'All servers failed.\nLast error: ${lastError ?? 'Unknown error'}',
+      );
     }
   }
 
@@ -105,12 +135,14 @@ class _AIPrescriptionScannerPageState extends State<AIPrescriptionScannerPage> {
   }
 
   Future<void> _addToSupabase(ScannedMedicine med) async {
-    // Optional: insert into medicines table
-    // await SupabaseService.addScannedMedicine({...});
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('${med.name} added to medication list')),
     );
   }
+
+  // ... keep the rest of the build(), _actionBtn(), _medicineCard(),
+  // _detailRow() exactly as they were in the previous version ...
+  // (Everything below this line is unchanged)
 
   @override
   Widget build(BuildContext context) {
@@ -138,7 +170,6 @@ class _AIPrescriptionScannerPageState extends State<AIPrescriptionScannerPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image preview or placeholder
             Container(
               width: double.infinity,
               height: 220,
@@ -167,7 +198,6 @@ class _AIPrescriptionScannerPageState extends State<AIPrescriptionScannerPage> {
                     ),
             ),
             const SizedBox(height: 20),
-            // Action buttons
             Row(
               children: [
                 Expanded(
@@ -190,7 +220,6 @@ class _AIPrescriptionScannerPageState extends State<AIPrescriptionScannerPage> {
               ],
             ),
             const SizedBox(height: 24),
-            // Scanning indicator
             if (_scanning)
               Center(
                 child: Column(
@@ -202,7 +231,6 @@ class _AIPrescriptionScannerPageState extends State<AIPrescriptionScannerPage> {
                   ],
                 ),
               ),
-            // Results
             if (_results.isNotEmpty) ...[
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
