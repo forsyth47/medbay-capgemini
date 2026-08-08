@@ -40,7 +40,7 @@ jobs:
       # ─── SIGNING SETUP ───
       - name: Decode keystore
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/upload-keystore.jks
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/zero-keystore.jks
 
       - name: Create key.properties
         run: |
@@ -48,7 +48,7 @@ jobs:
           storePassword=${{ secrets.KEYSTORE_PASSWORD }}
           keyPassword=${{ secrets.KEY_PASSWORD }}
           keyAlias=${{ secrets.KEY_ALIAS }}
-          storeFile=app/upload-keystore.jks
+          storeFile=zero-keystore.jks
           EOF
 
       # ─── BUILD ───
