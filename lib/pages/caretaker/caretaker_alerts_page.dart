@@ -1,3 +1,4 @@
+import 'package:Medbay/widgets/caretaker_bottom_nav.dart';
 import 'package:flutter/material.dart';
 import 'caretaker_home_page.dart';
 import 'caretaker_patients_page.dart';
@@ -41,32 +42,7 @@ class _CaretakerAlertsPageState extends State<CaretakerAlertsPage> {
         itemCount: _alerts.length,
         itemBuilder: (_, i) => _alertCard(_alerts[i]),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 2,
-        onTap: (idx) {
-          if (idx == 2) return;
-          final pages = [
-            const CaretakerHomePage(),
-            const CaretakerPatientsPage(),
-            const CaretakerProfilePage(),
-          ];
-          final routeIdx = idx > 2 ? idx - 3 : idx;
-          Navigator.pushReplacement(
-              context, MaterialPageRoute(builder: (_) => pages[routeIdx]));
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: _primary,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.people_outline), label: 'Patients'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.notifications_outlined), label: 'Alerts'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline), label: 'Profile'),
-        ],
-      ),
+      bottomNavigationBar: const CaretakerBottomNav(currentIndex: 2),
     );
   }
 

@@ -1,3 +1,4 @@
+import 'package:Medbay/widgets/doctor_bottom_nav.dart';
 import 'package:flutter/material.dart';
 import '../../models/patient_summary.dart';
 import '../../services/supabase_service.dart';
@@ -146,8 +147,8 @@ class _DoctorHomePageState extends State<DoctorHomePage> {
                 ),
               ),
       ),
-      
-      bottomNavigationBar: _bottomNav(),
+
+      bottomNavigationBar: const DoctorBottomNav(currentIndex: 0),
     );
   }
 
@@ -329,28 +330,6 @@ class _DoctorHomePageState extends State<DoctorHomePage> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _bottomNav() {
-    return BottomNavigationBar(
-      currentIndex: 0,
-      onTap: _nav,
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: _primary,
-      unselectedItemColor: Colors.grey,
-      items: const [
-        BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_outlined), label: 'Dashboard'),
-        BottomNavigationBarItem(
-            icon: Icon(Icons.people_outline), label: 'Patients'),
-        BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart), label: 'Reports'),
-        BottomNavigationBarItem(
-            icon: Icon(Icons.notifications_outlined), label: 'Alerts'),
-        BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline), label: 'Profile'),
-      ],
     );
   }
 }

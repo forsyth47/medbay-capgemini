@@ -47,7 +47,7 @@ class _HomePageState extends State<HomePage> {
     final uid = SupabaseService.currentUserId!;
     final p = await SupabaseService.getProfile();
     final m = await SupabaseService.getMedicines(uid);
-    final a = await SupabaseService.getAlerts();
+    final a = await SupabaseService.getAlerts(forCurrentUser: true);
     final s = await SupabaseService.getSchedules(uid);
     setState(() {
       profile = p;

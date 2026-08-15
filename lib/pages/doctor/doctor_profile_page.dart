@@ -1,3 +1,4 @@
+import 'package:Medbay/widgets/doctor_bottom_nav.dart';
 import 'package:flutter/material.dart';
 import '../../services/supabase_service.dart';
 import 'doctor_home_page.dart';
@@ -115,35 +116,7 @@ class DoctorProfilePage extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 4,
-        onTap: (idx) {
-          if (idx == 4) return;
-          final pages = [
-            const DoctorHomePage(),
-            const DoctorPatientsPage(),
-            const DoctorReportsPage(),
-            const DoctorAlertsPage(),
-          ];
-          Navigator.pushReplacement(
-              context, MaterialPageRoute(builder: (_) => pages[idx]));
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: _primary,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard_outlined), label: 'Dashboard'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.people_outline), label: 'Patients'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.bar_chart), label: 'Reports'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.notifications_outlined), label: 'Alerts'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline), label: 'Profile'),
-        ],
-      ),
+      bottomNavigationBar: const DoctorBottomNav(currentIndex: 4),
     );
   }
 

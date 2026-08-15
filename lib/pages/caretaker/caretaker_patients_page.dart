@@ -1,3 +1,4 @@
+import 'package:Medbay/widgets/caretaker_bottom_nav.dart';
 import 'package:flutter/material.dart';
 import '../../models/patient_summary.dart';
 import '../../services/supabase_service.dart';
@@ -57,32 +58,7 @@ class _CaretakerPatientsPageState extends State<CaretakerPatientsPage> {
               itemCount: patients.length,
               itemBuilder: (_, i) => _patientCard(patients[i]),
             ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 1,
-        onTap: (idx) {
-          if (idx == 1) return;
-          final pages = [
-            const CaretakerHomePage(),
-            const CaretakerAlertsPage(),
-            const CaretakerProfilePage(),
-          ];
-          final routeIdx = idx > 1 ? idx - 2 : idx;
-          Navigator.pushReplacement(
-              context, MaterialPageRoute(builder: (_) => pages[routeIdx]));
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: _primary,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.people_outline), label: 'Patients'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.notifications_outlined), label: 'Alerts'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline), label: 'Profile'),
-        ],
-      ),
+      bottomNavigationBar: const CaretakerBottomNav(currentIndex: 1),
     );
   }
 

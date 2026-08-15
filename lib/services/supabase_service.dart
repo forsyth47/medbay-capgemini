@@ -66,9 +66,13 @@ class SupabaseService {
     return response.map((j) => Schedule.fromJson(j)).toList();
   }
 
-  static Future<List<Alert>> getAlerts({String? patientId}) async {
+  static Future<List<Alert>> getAlerts({String? patientId, bool forCurrentUser = false}) async {
     var query = supabase.from('alerts').select();
-    if (patientId != null) query = query.eq('patient_id', patientId);
+    if (patientId != null) {
+      query = query.eq('patient_id', patientId);
+    } else if (forCurrentUser) {
+      query = query.eq('user_id', currentUserId!);
+    }
     final response = await query.order('created_at', ascending: false);
     return response.map((j) => Alert.fromJson(j)).toList();
   }
