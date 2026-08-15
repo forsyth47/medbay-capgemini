@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/supabase_service.dart';
+import '../../services/supabase_service.dart';
 
 class SetMedicineTimePage extends StatefulWidget {
   const SetMedicineTimePage({super.key});
@@ -15,7 +15,7 @@ class _SetMedicineTimePageState extends State<SetMedicineTimePage> {
   TimeOfDay _time = const TimeOfDay(hour: 8, minute: 0);
   String _repeat = 'Daily';
 
-  final List<String> _slots = ['s1', 's2', 's3', 's4'];
+  // final List<String> _slots = ['s1', 's2', 's3', 's4'];
   final List<String> _repeatOptions = ['Daily', 'Alt. Days', 'Weekly'];
 
   Future<void> _pickTime() async {

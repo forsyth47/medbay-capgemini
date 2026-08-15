@@ -1,7 +1,7 @@
 import 'package:Medbay/widgets/app_bottom_nav.dart';
 import 'package:flutter/material.dart';
-import '../models/alert.dart';
-import '../services/supabase_service.dart';
+import '../../models/alert.dart';
+import '../../services/supabase_service.dart';
 
 class AlertsPage extends StatefulWidget {
   const AlertsPage({super.key});

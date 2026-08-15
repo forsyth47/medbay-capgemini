@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models/medicine.dart';
-import '../services/supabase_service.dart';
+import '../../models/medicine.dart';
+import '../../services/supabase_service.dart';
 
 class LoadDispenserPage extends StatefulWidget {
   const LoadDispenserPage({super.key});
@@ -20,7 +20,7 @@ class _LoadDispenserPageState extends State<LoadDispenserPage> {
   }
 
   Future<void> _load() async {
-    final data = await SupabaseService.getMedicines();
+    final data = await SupabaseService.getMedicines(SupabaseService.currentUserId!);
     setState(() {
       medicines = data;
       loading = false;

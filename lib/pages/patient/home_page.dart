@@ -1,10 +1,11 @@
 import 'dart:async';
+import 'package:Medbay/models/user_profile.dart';
 import 'package:flutter/material.dart';
-import '../models/medicine.dart';
-import '../models/schedule.dart';
-import '../models/alert.dart';
-import '../services/supabase_service.dart';
-import '../widgets/app_bottom_nav.dart';
+import '../../models/medicine.dart';
+import '../../models/schedule.dart';
+import '../../models/alert.dart';
+import '../../services/supabase_service.dart';
+import '../../widgets/app_bottom_nav.dart';
 import 'medicines_page.dart';
 import 'reports_page.dart';
 import 'alerts_page.dart';
@@ -21,6 +22,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  UserProfile? profile;
   List<Medicine> medicines = [];
   List<Schedule> schedules = [];
   List<Alert> alerts = [];
@@ -42,10 +44,13 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _loadData() async {
-    final m = await SupabaseService.getMedicines();
+    final uid = SupabaseService.currentUserId!;
+    final p = await SupabaseService.getProfile();
+    final m = await SupabaseService.getMedicines(uid);
     final a = await SupabaseService.getAlerts();
-    final s = await SupabaseService.getSchedules();
+    final s = await SupabaseService.getSchedules(uid);
     setState(() {
+      profile = p;
       medicines = m;
       schedules = s;
       alerts = a.where((x) => x.isToday).take(2).toList();
@@ -164,7 +169,9 @@ class _HomePageState extends State<HomePage> {
                                 children: [
                                   const Text('Good Morning,',
                                       style: TextStyle(color: Colors.white70)),
-                                  const Text('Rahul Sharma 👋',
+                                  //fetch name from supabase of the logged in user
+
+                                  Text('${profile?.fullName ?? "User"} 👋',
                                       style: TextStyle(
                                           color: Colors.white,
                                           fontSize: 20,

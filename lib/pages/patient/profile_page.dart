@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../models/user_profile.dart';
-import '../services/supabase_service.dart';
-import '../widgets/app_bottom_nav.dart';
-import 'login_page.dart';
+import '../../models/user_profile.dart';
+import '../../services/supabase_service.dart';
+import '../../widgets/app_bottom_nav.dart';
+import '../login_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});

@@ -1,0 +1,226 @@
+import 'package:flutter/material.dart';
+
+class DoctorPatientDetailPage extends StatelessWidget {
+  final String patientId;
+  final String patientName;
+  const DoctorPatientDetailPage(
+      {super.key, required this.patientId, required this.patientName});
+
+  Color get _primary => const Color(0xFF0D9488);
+
+  final List<_MedAdherence> _meds = const [
+    _MedAdherence('Metformin 500mg', 'S1 · Daily', 0.95),
+    _MedAdherence('Amlodipine 5mg', 'S3 · Daily', 0.78),
+    _MedAdherence('Atorvastatin 10mg', 'S1 · Nightly', 0.91),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        backgroundColor: _primary,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(patientName,
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text('Patient · 54 yrs · O+',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal)),
+          ],
+        ),
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.green,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white, size: 14),
+                SizedBox(width: 4),
+                Text('Stable',
+                    style: TextStyle(color: Colors.white, fontSize: 12)),
+              ],
+            ),
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            // Adherence circle
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                children: [
+                  SizedBox(
+                    height: 100,
+                    width: 100,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          value: 0.92,
+                          strokeWidth: 10,
+                          backgroundColor: Colors.grey.shade200,
+                          valueColor:
+                              AlwaysStoppedAnimation(_primary),
+                        ),
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('92%',
+                                style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: _primary)),
+                            Text('Adherence\nToday',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.grey.shade500)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 24),
+                  Expanded(
+                    child: Column(
+                      children: [
+                        _adherenceStat('Taken', '3', Colors.green),
+                        const Divider(height: 16),
+                        _adherenceStat('Upcoming', '1', Colors.blue),
+                        const Divider(height: 16),
+                        _adherenceStat('Missed', '0', Colors.red),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Medication adherence list
+            ..._meds.map((m) => _medTile(m)),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.download),
+                label: const Text('Generate Patient Report'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _adherenceStat(String label, String val, Color color) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 8),
+            Text(label,
+                style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500)),
+          ],
+        ),
+        Text(val,
+            style: const TextStyle(
+                fontSize: 16, fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+
+  Widget _medTile(_MedAdherence m) {
+    Color barColor = Colors.green;
+    if (m.adherence < 0.8) barColor = Colors.orange;
+    if (m.adherence < 0.6) barColor = Colors.red;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.medication, color: _primary.withOpacity(0.6)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(m.name,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w600, fontSize: 15)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(m.detail,
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: m.adherence,
+              backgroundColor: Colors.grey.shade200,
+              valueColor: AlwaysStoppedAnimation(barColor),
+              minHeight: 8,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text('${(m.adherence * 100).toInt()}%',
+                style: TextStyle(
+                    color: barColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MedAdherence {
+  final String name;
+  final String detail;
+  final double adherence;
+  const _MedAdherence(this.name, this.detail, this.adherence);
+}

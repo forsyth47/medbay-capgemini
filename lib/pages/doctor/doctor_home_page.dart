@@ -1,0 +1,356 @@
+import 'package:flutter/material.dart';
+import '../../models/patient_summary.dart';
+import '../../services/supabase_service.dart';
+import 'doctor_patients_page.dart';
+import 'doctor_reports_page.dart';
+import 'doctor_alerts_page.dart';
+import 'doctor_profile_page.dart';
+import 'doctor_patient_detail_page.dart';
+
+class DoctorHomePage extends StatefulWidget {
+  const DoctorHomePage({super.key});
+
+  @override
+  State<DoctorHomePage> createState() => _DoctorHomePageState();
+}
+
+class _DoctorHomePageState extends State<DoctorHomePage> {
+  List<PatientSummary> patients = [];
+  bool loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final data = await SupabaseService.getAssignedPatients('doctor');
+    setState(() {
+      patients = data;
+      loading = false;
+    });
+  }
+
+  void _nav(int idx) {
+    final pages = [
+      const DoctorPatientsPage(),
+      const DoctorReportsPage(),
+      const DoctorAlertsPage(),
+      const DoctorProfilePage(),
+    ];
+    if (idx == 0) return;
+    Navigator.push(context, MaterialPageRoute(builder: (_) => pages[idx - 1]));
+  }
+
+  Color get _primary => const Color(0xFF0D9488); // teal-600
+
+  @override
+  Widget build(BuildContext context) {
+    final active = patients.where((p) => p.status == 'Stable').length;
+    final attention = patients.where((p) => p.status == 'Attention').length;
+    final critical = patients.where((p) => p.status == 'Critical').length;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: SafeArea(
+        child: loading
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                child: Column(
+                  children: [
+                    // Header
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [_primary, const Color(0xFF14B8A6)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(24),
+                          bottomRight: Radius.circular(24),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Good Morning,',
+                                      style: TextStyle(color: Colors.white70)),
+                                  const Text('Dr. Sharma 👋',
+                                      style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold)),
+                                  const SizedBox(height: 4),
+                                  Text('Your patient overview for today.',
+                                      style: TextStyle(
+                                          color: Colors.white.withOpacity(0.8),
+                                          fontSize: 12)),
+                                ],
+                              ),
+                              CircleAvatar(
+                                backgroundColor: Colors.white24,
+                                child: Icon(Icons.person, color: Colors.white),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              _statCard('${patients.length}', 'Patients'),
+                              _statCard('$active', 'Active'),
+                              _statCard('$attention', 'Attention'),
+                              _statCard('$critical', 'Critical',
+                                  accent: Colors.red.shade300),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Critical Alert
+                    if (critical > 0)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _criticalAlert(),
+                      ),
+                    const SizedBox(height: 16),
+                    // Patients Overview
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Patients Overview',
+                              style: TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.bold)),
+                          TextButton(
+                            onPressed: () => _nav(0),
+                            child: const Text('All >'),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ...patients.take(3).map((p) => _patientTile(p)),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+      ),
+      
+      bottomNavigationBar: _bottomNav(),
+    );
+  }
+
+  Widget _statCard(String val, String label, {Color? accent}) {
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          children: [
+            Text(val,
+                style: TextStyle(
+                    color: accent ?? Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold)),
+            const SizedBox(height: 2),
+            Text(label,
+                style: TextStyle(color: Colors.white70, fontSize: 10)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _criticalAlert() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.red.shade100),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.red.shade600),
+              const SizedBox(width: 8),
+              Text('Repeated Missed Doses',
+                  style: TextStyle(
+                      color: Colors.red.shade800,
+                      fontWeight: FontWeight.bold)),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade600,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text('Urgent',
+                    style: TextStyle(color: Colors.white, fontSize: 10)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text('Vijay has missed 2 doses of Amlodipine in the last 24 hours.',
+              style: TextStyle(color: Colors.red.shade700, fontSize: 13)),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _alertBtn('View Patient', Colors.red.shade600, () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const DoctorPatientDetailPage(
+                            patientId: 'p1', patientName: 'Vijay Kumar')));
+              }),
+              const SizedBox(width: 8),
+              _alertBtn('Contact Caretaker', Colors.red.shade400, () {}),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _alertBtn(String text, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Text(text,
+            style: TextStyle(
+                color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+      ),
+    );
+  }
+
+  Widget _patientTile(PatientSummary p) {
+    Color statusColor = Colors.green;
+    if (p.status == 'Attention') statusColor = Colors.orange;
+    if (p.status == 'Critical') statusColor = Colors.red;
+
+    return GestureDetector(
+      onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) => DoctorPatientDetailPage(
+                  patientId: p.id, patientName: p.name))),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10, left: 16, right: 16),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              backgroundColor: _primary.withOpacity(0.1),
+              child: Icon(Icons.person_outline, color: _primary),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(p.name,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 14)),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: p.isOnline ? Colors.green : Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(p.isOnline ? 'Online' : 'Offline',
+                          style: TextStyle(
+                              color: Colors.grey.shade500, fontSize: 11)),
+                      const SizedBox(width: 12),
+                      Text('Last: ${p.lastActive ?? '-'}',
+                          style: TextStyle(
+                              color: Colors.grey.shade500, fontSize: 11)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text('${(p.adherence * 100).toInt()}%',
+                    style: TextStyle(
+                        color: statusColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14)),
+                const SizedBox(height: 4),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(p.status,
+                      style: TextStyle(
+                          color: statusColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600)),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _bottomNav() {
+    return BottomNavigationBar(
+      currentIndex: 0,
+      onTap: _nav,
+      type: BottomNavigationBarType.fixed,
+      selectedItemColor: _primary,
+      unselectedItemColor: Colors.grey,
+      items: const [
+        BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard_outlined), label: 'Dashboard'),
+        BottomNavigationBarItem(
+            icon: Icon(Icons.people_outline), label: 'Patients'),
+        BottomNavigationBarItem(
+            icon: Icon(Icons.bar_chart), label: 'Reports'),
+        BottomNavigationBarItem(
+            icon: Icon(Icons.notifications_outlined), label: 'Alerts'),
+        BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline), label: 'Profile'),
+      ],
+    );
+  }
+}

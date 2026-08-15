@@ -1,8 +1,8 @@
 // import 'package:Medbay/widgets/app_bottom_nav.dart';
 import 'package:flutter/material.dart';
-import '../models/medicine.dart';
-import '../services/supabase_service.dart';
-import '../widgets/app_bottom_nav.dart';
+import '../../models/medicine.dart';
+import '../../services/supabase_service.dart';
+import '../../widgets/app_bottom_nav.dart';
 
 class MedicinesPage extends StatefulWidget {
   const MedicinesPage({super.key});
@@ -22,7 +22,7 @@ class _MedicinesPageState extends State<MedicinesPage> {
   }
 
   Future<void> _load() async {
-    final data = await SupabaseService.getMedicines();
+    final data = await SupabaseService.getMedicines(SupabaseService.currentUserId!);
     setState(() {
       medicines = data;
       loading = false;
@@ -56,10 +56,14 @@ class _MedicinesPageState extends State<MedicinesPage> {
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Medicine Slots',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            Text('4 slots available in your dispenser',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal)),
+            Text(
+              'Medicine Slots',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            Text(
+              '4 slots available in your dispenser',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+            ),
           ],
         ),
       ),
@@ -103,16 +107,22 @@ class _MedicinesPageState extends State<MedicinesPage> {
         ),
         child: Column(
           children: [
-            Text(val,
-                style: TextStyle(
-                    color: color == Colors.blue ? Colors.white : color,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold)),
+            Text(
+              val,
+              style: TextStyle(
+                color: color == Colors.blue ? Colors.white : color,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 2),
-            Text(label,
-                style: TextStyle(
-                    color: color == Colors.blue ? Colors.white70 : color,
-                    fontSize: 11)),
+            Text(
+              label,
+              style: TextStyle(
+                color: color == Colors.blue ? Colors.white70 : color,
+                fontSize: 11,
+              ),
+            ),
           ],
         ),
       ),
@@ -141,9 +151,10 @@ class _MedicinesPageState extends State<MedicinesPage> {
                   shape: BoxShape.circle,
                 ),
                 child: Center(
-                  child: Text('${m.slotNumber}',
-                      style: TextStyle(
-                          color: color, fontWeight: FontWeight.bold)),
+                  child: Text(
+                    '${m.slotNumber}',
+                    style: TextStyle(color: color, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -151,31 +162,46 @@ class _MedicinesPageState extends State<MedicinesPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(m.name,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 15)),
-                    Text('${m.condition} · ${m.dosage}',
-                        style: TextStyle(
-                            color: Colors.grey.shade500, fontSize: 12)),
+                    Text(
+                      m.name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                    Text(
+                      '${m.condition} · ${m.dosage}',
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 12,
+                      ),
+                    ),
                   ],
                 ),
               ),
-              Text(m.status,
-                  style: TextStyle(
-                      color: color,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600)),
+              Text(
+                m.status,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('${m.quantity} tablets remaining',
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+              Text(
+                '${m.quantity} tablets remaining',
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+              ),
               if (m.status == 'Low Stock')
-                Text('Refill soon',
-                    style: TextStyle(color: Colors.orange, fontSize: 12)),
+                Text(
+                  'Refill soon',
+                  style: TextStyle(color: Colors.orange, fontSize: 12),
+                ),
             ],
           ),
           const SizedBox(height: 8),

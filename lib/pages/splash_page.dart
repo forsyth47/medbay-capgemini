@@ -12,7 +12,6 @@ class _SplashPageState extends State<SplashPage> {
   @override
   void initState() {
     super.initState();
-    // Wait 2.5s then go to login
     Future.delayed(const Duration(milliseconds: 2500), () {
       if (mounted) {
         Navigator.pushReplacement(
@@ -29,51 +28,77 @@ class _SplashPageState extends State<SplashPage> {
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.blue.shade700, Colors.blue.shade400],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            colors: [
+              const Color(0xFF1E1B4B), // indigo-950
+              const Color(0xFF4C1D95), // violet-900
+              const Color(0xFF7C3AED), // violet-600
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
         ),
-        child: Center(
+        child: SafeArea(
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              const Spacer(),
+              // Logo container
               Container(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 30,
+                      spreadRadius: 5,
+                    ),
+                  ],
                 ),
-                child: Icon(Icons.medication, size: 50, color: Colors.blue.shade700),
+                child: Icon(
+                  Icons.medication,
+                  size: 48,
+                  color: const Color(0xFF7C3AED),
+                ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
               const Text(
-                'Smart Medication\nDispenser',
-                textAlign: TextAlign.center,
+                'MediDispenser',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 24,
+                  fontSize: 28,
                   fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Your Smart Health Companion',
-                style: TextStyle(color: Colors.white70, fontSize: 14),
+              Text(
+                '"Right Medicine. Right Time. Every Time."',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: 13,
+                  fontStyle: FontStyle.italic,
+                ),
               ),
               const SizedBox(height: 40),
+              // Loading dots
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _dot(true), _dot(false), _dot(false),
+                  _dot(true),
+                  _dot(false),
+                  _dot(false),
                 ],
               ),
               const Spacer(),
-              const Text(
+              Text(
                 'v2.41 · ESP32 IoT Platform',
-                style: TextStyle(color: Colors.white54, fontSize: 12),
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.4),
+                  fontSize: 12,
+                ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 32),
             ],
           ),
         ),
@@ -81,10 +106,11 @@ class _SplashPageState extends State<SplashPage> {
     );
   }
 
-  Widget _dot(bool active) => Container(
+  Widget _dot(bool active) => AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
         margin: const EdgeInsets.symmetric(horizontal: 4),
-        width: 8,
-        height: 8,
+        width: active ? 10 : 8,
+        height: active ? 10 : 8,
         decoration: BoxDecoration(
           color: active ? Colors.white : Colors.white38,
           shape: BoxShape.circle,
