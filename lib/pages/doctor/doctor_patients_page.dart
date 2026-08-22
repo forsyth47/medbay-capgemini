@@ -115,7 +115,7 @@ class _DoctorPatientsPageState extends State<DoctorPatientsPage> {
     );
   }
 
-  Widget _patientCard(PatientSummary p) {
+    Widget _patientCard(PatientSummary p) {
     Color statusColor = Colors.green;
     if (p.status == 'Attention') statusColor = Colors.orange;
     if (p.status == 'Critical') statusColor = Colors.red;
@@ -132,6 +132,14 @@ class _DoctorPatientsPageState extends State<DoctorPatientsPage> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [

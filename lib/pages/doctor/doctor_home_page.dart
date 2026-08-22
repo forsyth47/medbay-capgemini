@@ -26,7 +26,10 @@ class _DoctorHomePageState extends State<DoctorHomePage> {
   }
 
   Future<void> _load() async {
-    final data = await SupabaseService.getAssignedPatients('doctor', SupabaseService.currentUserId!);
+    final data = await SupabaseService.getAssignedPatients(
+      'doctor',
+      SupabaseService.currentUserId!,
+    );
     setState(() {
       patients = data;
       loading = false;
@@ -40,8 +43,7 @@ class _DoctorHomePageState extends State<DoctorHomePage> {
       const DoctorAlertsPage(),
       const DoctorProfilePage(),
     ];
-    if (idx == 0) return;
-    Navigator.push(context, MaterialPageRoute(builder: (_) => pages[idx - 1]));
+    Navigator.push(context, MaterialPageRoute(builder: (_) => pages[idx]));
   }
 
   Color get _primary => const Color(0xFF0D9488); // teal-600
@@ -83,23 +85,39 @@ class _DoctorHomePageState extends State<DoctorHomePage> {
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text('Good Morning,',
-                                      style: TextStyle(color: Colors.white70)),
-                                  const Text('Dr. Sharma 👋',
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold)),
+                                  const Text(
+                                    'Good Morning,',
+                                    style: TextStyle(color: Colors.white70),
+                                  ),
+                                  const Text(
+                                    'Dr. Sharma 👋',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                   const SizedBox(height: 4),
-                                  Text('Your patient overview for today.',
-                                      style: TextStyle(
-                                          color: Colors.white.withValues(alpha: 0.8),
-                                          fontSize: 12)),
+                                  Text(
+                                    'Your patient overview for today.',
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.8,
+                                      ),
+                                      fontSize: 12,
+                                    ),
+                                  ),
                                 ],
                               ),
-                              CircleAvatar(
-                                backgroundColor: Colors.white24,
-                                child: Icon(Icons.person, color: Colors.white),
+                              GestureDetector(
+                                onTap: () => _nav(3),
+                                child: const CircleAvatar(
+                                  backgroundColor: Colors.white24,
+                                  child: Icon(
+                                    Icons.person,
+                                    color: Colors.white,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
@@ -109,8 +127,11 @@ class _DoctorHomePageState extends State<DoctorHomePage> {
                               _statCard('${patients.length}', 'Patients'),
                               _statCard('$active', 'Active'),
                               _statCard('$attention', 'Attention'),
-                              _statCard('$critical', 'Critical',
-                                  accent: Colors.red.shade300),
+                              _statCard(
+                                '$critical',
+                                'Critical',
+                                accent: Colors.red.shade300,
+                              ),
                             ],
                           ),
                         ],
@@ -130,9 +151,13 @@ class _DoctorHomePageState extends State<DoctorHomePage> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Patients Overview',
-                              style: TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.bold)),
+                          const Text(
+                            'Patients Overview',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           TextButton(
                             onPressed: () => _nav(0),
                             child: const Text('All >'),
@@ -163,14 +188,16 @@ class _DoctorHomePageState extends State<DoctorHomePage> {
         ),
         child: Column(
           children: [
-            Text(val,
-                style: TextStyle(
-                    color: accent ?? Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold)),
+            Text(
+              val,
+              style: TextStyle(
+                color: accent ?? Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 2),
-            Text(label,
-                style: TextStyle(color: Colors.white70, fontSize: 10)),
+            Text(label, style: TextStyle(color: Colors.white70, fontSize: 10)),
           ],
         ),
       ),
@@ -192,10 +219,13 @@ class _DoctorHomePageState extends State<DoctorHomePage> {
             children: [
               Icon(Icons.error_outline, color: Colors.red.shade600),
               const SizedBox(width: 8),
-              Text('Repeated Missed Doses',
-                  style: TextStyle(
-                      color: Colors.red.shade800,
-                      fontWeight: FontWeight.bold)),
+              Text(
+                'Repeated Missed Doses',
+                style: TextStyle(
+                  color: Colors.red.shade800,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -203,23 +233,31 @@ class _DoctorHomePageState extends State<DoctorHomePage> {
                   color: Colors.red.shade600,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Text('Urgent',
-                    style: TextStyle(color: Colors.white, fontSize: 10)),
+                child: const Text(
+                  'Urgent',
+                  style: TextStyle(color: Colors.white, fontSize: 10),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 6),
-          Text('Vijay has missed 2 doses of Amlodipine in the last 24 hours.',
-              style: TextStyle(color: Colors.red.shade700, fontSize: 13)),
+          Text(
+            'Vijay has missed 2 doses of Amlodipine in the last 24 hours.',
+            style: TextStyle(color: Colors.red.shade700, fontSize: 13),
+          ),
           const SizedBox(height: 12),
           Row(
             children: [
               _alertBtn('View Patient', Colors.red.shade600, () {
                 Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const DoctorPatientDetailPage(
-                            patientId: 'p1', patientName: 'Vijay Kumar')));
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const DoctorPatientDetailPage(
+                      patientId: 'p1',
+                      patientName: 'Vijay Kumar',
+                    ),
+                  ),
+                );
               }),
               const SizedBox(width: 8),
               _alertBtn('Contact Caretaker', Colors.red.shade400, () {}),
@@ -240,9 +278,14 @@ class _DoctorHomePageState extends State<DoctorHomePage> {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
-        child: Text(text,
-            style: TextStyle(
-                color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: color,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
     );
   }
@@ -254,10 +297,12 @@ class _DoctorHomePageState extends State<DoctorHomePage> {
 
     return GestureDetector(
       onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (_) => DoctorPatientDetailPage(
-                  patientId: p.id, patientName: p.name))),
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              DoctorPatientDetailPage(patientId: p.id, patientName: p.name),
+        ),
+      ),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10, left: 16, right: 16),
         padding: const EdgeInsets.all(14),
@@ -276,9 +321,13 @@ class _DoctorHomePageState extends State<DoctorHomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(p.name,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w600, fontSize: 14)),
+                  Text(
+                    p.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
@@ -291,13 +340,21 @@ class _DoctorHomePageState extends State<DoctorHomePage> {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      Text(p.isOnline ? 'Online' : 'Offline',
-                          style: TextStyle(
-                              color: Colors.grey.shade500, fontSize: 11)),
+                      Text(
+                        p.isOnline ? 'Online' : 'Offline',
+                        style: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontSize: 11,
+                        ),
+                      ),
                       const SizedBox(width: 12),
-                      Text('Last: ${p.lastActive ?? '-'}',
-                          style: TextStyle(
-                              color: Colors.grey.shade500, fontSize: 11)),
+                      Text(
+                        'Last: ${p.lastActive ?? '-'}',
+                        style: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontSize: 11,
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -306,24 +363,32 @@ class _DoctorHomePageState extends State<DoctorHomePage> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text('${(p.adherence * 100).toInt()}%',
-                    style: TextStyle(
-                        color: statusColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14)),
+                Text(
+                  '${(p.adherence * 100).toInt()}%',
+                  style: TextStyle(
+                    color: statusColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
                 const SizedBox(height: 4),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(p.status,
-                      style: TextStyle(
-                          color: statusColor,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600)),
+                  child: Text(
+                    p.status,
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ],
             ),

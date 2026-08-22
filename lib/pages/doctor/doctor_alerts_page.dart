@@ -1,6 +1,9 @@
-import 'package:medbay/models/alert.dart';
-import 'package:medbay/widgets/doctor_bottom_nav.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../models/alert.dart';
+import '../../services/supabase_service.dart';
+import '../../widgets/doctor_bottom_nav.dart';
+import 'doctor_patient_detail_page.dart';
 
 class DoctorAlertsPage extends StatefulWidget {
   const DoctorAlertsPage({super.key});
@@ -11,45 +14,88 @@ class DoctorAlertsPage extends StatefulWidget {
 
 class _DoctorAlertsPageState extends State<DoctorAlertsPage> {
   Color get _primary => const Color(0xFF0D9488);
+  List<Alert> alerts = [];
+  bool loading = true;
 
-  final List<Alert> _alerts = [
-    Alert.fromJson({
-      'id': '1',
-      'user_id': '',
-      'patient_id': '',
-      'type': 'missed',
-      'title': 'Repeated Missed Doses',
-      'message': 'Vijay has missed 2 doses of Amlodipine in the last 24 hours.',
-      'severity': 'urgent',
-      'request_status': null,
-      'created_at': DateTime.now().subtract(const Duration(hours: 2)).toIso8601String(),
-      'read': false,
-    }),
-    Alert.fromJson({
-      'id': '2',
-      'user_id': '',
-      'patient_id': '',
-      'type': 'low_stock',
-      'title': 'Low Medication Stock',
-      'message': 'Anita Patel: Slot 3 has only 4 tablets remaining.',
-      'severity': 'normal',
-      'request_status': null,
-      'created_at': DateTime.now().subtract(const Duration(hours: 5)).toIso8601String(),
-      'read': false,
-    }),
-    Alert.fromJson({
-      'id': '3',
-      'user_id': '',
-      'patient_id': '',
-      'type': 'offline',
-      'title': 'Device Offline',
-      'message': 'Meera Joshi\'s dispenser has been offline for 3 hours.',
-      'severity': 'urgent',
-      'request_status': null,
-      'created_at': DateTime.now().subtract(const Duration(hours: 3)).toIso8601String(),
-      'read': false,
-    }),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final data = await SupabaseService.getUrgentAlerts(SupabaseService.currentUserId!);
+    setState(() {
+      alerts = data;
+      loading = false;
+    });
+  }
+
+  Future<void> _call(String? number) async {
+    if (number == null || number.isEmpty) return;
+    final uri = Uri.parse('tel:${number.replaceAll(RegExp(r'\s+'), '')}');
+    if (await canLaunchUrl(uri)) await launchUrl(uri);
+  }
+
+  Future<void> _contactCaretaker(String patientId) async {
+    final caretakers = await SupabaseService.getCaretakersForPatient(patientId);
+    if (caretakers.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No caretaker assigned')),
+      );
+      return;
+    }
+    await _showCaretakersDialog(caretakers);
+  }
+
+  Future<void> _showCaretakersDialog(List<Map<String, dynamic>> caretakers) async {
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Contact Caretaker', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.separated(
+            shrinkWrap: true,
+            itemCount: caretakers.length,
+            separatorBuilder: (_, __) => const Divider(height: 1),
+            itemBuilder: (_, i) {
+              final c = caretakers[i];
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: CircleAvatar(
+                  backgroundColor: _primary.withValues(alpha: 0.1),
+                  child: Icon(Icons.medical_services, color: _primary, size: 18),
+                ),
+                title: Text(c['full_name'] ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                subtitle: Text(c['mobile'] ?? '-', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                trailing: IconButton(
+                  icon: const Icon(Icons.phone, color: Colors.green),
+                  onPressed: () => _call(c['mobile']),
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
+  void _viewPatient(String patientId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DoctorPatientDetailPage(
+          patientId: patientId,
+          patientName: 'Patient',
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,83 +104,31 @@ class _DoctorAlertsPageState extends State<DoctorAlertsPage> {
       appBar: AppBar(
         backgroundColor: _primary,
         elevation: 0,
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Alerts',
+            const Text('Alerts',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            Text('3 alerts require attention',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal)),
+            Text('${alerts.length} urgent alerts',
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal)),
           ],
         ),
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _alerts.length,
-        itemBuilder: (_, i) => _alertCard(_alerts[i]),
-      ),
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : alerts.isEmpty
+              ? const Center(child: Text('No urgent alerts'))
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: alerts.length,
+                  itemBuilder: (_, i) => _alertCard(alerts[i]),
+                ),
       bottomNavigationBar: const DoctorBottomNav(currentIndex: 3),
     );
   }
 
   Widget _alertCard(Alert a) {
-    if (a.type == 'request') {
-      Color chipColor = Colors.blue;
-      String chipText = 'Pending';
-      if (a.requestStatus == 'accepted') {
-        chipColor = Colors.green;
-        chipText = 'Accepted';
-      } else if (a.requestStatus == 'rejected') {
-        chipColor = Colors.red;
-        chipText = 'Rejected';
-      }
-
-      return Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border(left: BorderSide(color: chipColor, width: 4)),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.medical_services, color: chipColor),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(a.title,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 15)),
-                  const SizedBox(height: 4),
-                  Text(a.message,
-                      style: TextStyle(
-                          color: Colors.grey.shade600, fontSize: 13)),
-                ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: chipColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: chipColor.withValues(alpha: 0.3)),
-              ),
-              child: Text(chipText,
-                  style: TextStyle(
-                      color: chipColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600)),
-            ),
-          ],
-        ),
-      );
-    }
-
-    Color color = Colors.blue;
-    if (a.type == 'missed' || a.type == 'offline') color = Colors.red;
+    Color color = Colors.red;
     if (a.type == 'low_stock') color = Colors.orange;
     if (a.type == 'success') color = Colors.green;
 
@@ -158,6 +152,18 @@ class _DoctorAlertsPageState extends State<DoctorAlertsPage> {
                     style: const TextStyle(
                         fontWeight: FontWeight.bold, fontSize: 15)),
               ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(a.severity!.toUpperCase(),
+                    style: TextStyle(
+                        color: color,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600)),
+              ),
             ],
           ),
           const SizedBox(height: 6),
@@ -166,9 +172,10 @@ class _DoctorAlertsPageState extends State<DoctorAlertsPage> {
           const SizedBox(height: 12),
           Row(
             children: [
-              _actionBtn('View Patient', color, () {}),
+              _actionBtn('View Patient', color, () => _viewPatient(a.patientId ?? a.userId)),
               const SizedBox(width: 8),
-              _actionBtn('Contact Caretaker', Colors.grey.shade600, () {}),
+              _actionBtn('Contact Caretaker', Colors.grey.shade600,
+                  () => _contactCaretaker(a.patientId ?? a.userId)),
             ],
           ),
         ],

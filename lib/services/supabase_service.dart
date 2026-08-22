@@ -343,4 +343,106 @@ class SupabaseService {
       'read': false,
     }).eq('id', alertId);
   }
+
+    // ─── Doctor helpers ───
+  static Future<int> getPatientCount(String doctorId) async {
+    final res = await supabase
+        .from('care_relationships')
+        .select('id')
+        .eq('doctor_id', doctorId)
+        .eq('status', 'active');
+    return res.length;
+  }
+
+  static Future<List<Alert>> getUrgentAlerts(String doctorId) async {
+    final rels = await supabase
+        .from('care_relationships')
+        .select('patient_id')
+        .eq('doctor_id', doctorId)
+        .eq('status', 'active');
+    final patientIds = rels.map((r) => r['patient_id'] as String).toList();
+    if (patientIds.isEmpty) return [];
+
+    final response = await supabase
+        .from('alerts')
+        .select()
+        .inFilter('patient_id', patientIds)
+        .eq('severity', 'urgent')
+        .order('created_at', ascending: false);
+    return response.map((j) => Alert.fromJson(j)).toList();
+  }
+
+    static Future<Map<String, dynamic>?> getCaretakerForPatient(String patientId) async {
+    final rel = await supabase
+        .from('care_relationships')
+        .select('caretaker_id')
+        .eq('patient_id', patientId)
+        .eq('status', 'active')
+        .maybeSingle();
+    if (rel == null || rel['caretaker_id'] == null) return null;
+
+    final profile = await supabase
+        .from('profiles')
+        .select('full_name, mobile')
+        .eq('id', rel['caretaker_id'])
+        .maybeSingle();
+    return profile;
+  }
+
+  static Future<List<Map<String, dynamic>>> getCaretakersForPatient(String patientId) async {
+    final rels = await supabase
+        .from('care_relationships')
+        .select('caretaker_id')
+        .eq('patient_id', patientId)
+        .eq('status', 'active');
+
+    final ids = rels
+        .where((r) => r['caretaker_id'] != null)
+        .map((r) => r['caretaker_id'] as String)
+        .toList();
+    if (ids.isEmpty) return [];
+
+    final profiles = await supabase
+        .from('profiles')
+        .select('full_name, mobile')
+        .inFilter('id', ids);
+    return List<Map<String, dynamic>>.from(profiles);
+  }
+
+  static Future<void> removePatientAccess(String doctorId, String patientId) async {
+    await supabase
+        .from('care_relationships')
+        .delete()
+        .eq('doctor_id', doctorId)
+        .eq('patient_id', patientId);
+  }
+
+  static Future<UserProfile?> getPatientProfile(String patientId) async {
+    final response = await supabase
+        .from('profiles')
+        .select()
+        .eq('id', patientId)
+        .maybeSingle();
+    if (response == null) return null;
+    return UserProfile.fromJson(response);
+  }
+
+  static Future<List<Medicine>> getPatientMedicines(String patientId) async {
+    final response = await supabase
+        .from('medicines')
+        .select()
+        .eq('user_id', patientId)
+        .order('slot_number');
+    return response.map((j) => Medicine.fromJson(j)).toList();
+  }
+
+  static Future<List<Map<String, dynamic>>> getPatientDispenseLogs(String patientId) async {
+    final response = await supabase
+        .from('dispense_logs')
+        .select()
+        .eq('user_id', patientId)
+        .order('scheduled_time', ascending: false)
+        .limit(30);
+    return List<Map<String, dynamic>>.from(response);
+  }
 }

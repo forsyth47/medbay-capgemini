@@ -23,7 +23,7 @@ class AppBottomNav extends StatelessWidget {
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) => pages[index],
+        pageBuilder: (_, _, _) => pages[index],
         transitionDuration: Duration.zero,
         reverseTransitionDuration: Duration.zero,
       ),
