@@ -1,10 +1,7 @@
-import 'package:Medbay/widgets/caretaker_bottom_nav.dart';
+import 'package:medbay/widgets/caretaker_bottom_nav.dart';
 import 'package:flutter/material.dart';
 import '../../models/patient_summary.dart';
 import '../../services/supabase_service.dart';
-import 'caretaker_home_page.dart';
-import 'caretaker_alerts_page.dart';
-import 'caretaker_profile_page.dart';
 import 'caretaker_patient_detail_page.dart';
 
 class CaretakerPatientsPage extends StatefulWidget {
@@ -25,7 +22,8 @@ class _CaretakerPatientsPageState extends State<CaretakerPatientsPage> {
   }
 
   Future<void> _load() async {
-    final data = await SupabaseService.getAssignedPatients('caretaker');
+    final uid = SupabaseService.currentUserId!;
+    final data = await SupabaseService.getAssignedPatients('caretaker', uid);
     setState(() {
       patients = data;
       loading = false;
@@ -86,7 +84,7 @@ class _CaretakerPatientsPageState extends State<CaretakerPatientsPage> {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: _primary.withOpacity(0.1),
+                  backgroundColor: _primary.withValues(alpha: 0.1),
                   child: Icon(Icons.person_outline, color: _primary),
                 ),
                 const SizedBox(width: 12),

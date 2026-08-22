@@ -5,6 +5,7 @@ class Alert {
   final String message;
   final DateTime createdAt;
   final bool read;
+  final String? requestStatus; // NEW
 
   Alert({
     required this.id,
@@ -13,6 +14,7 @@ class Alert {
     required this.message,
     required this.createdAt,
     this.read = false,
+    this.requestStatus,
   });
 
   factory Alert.fromJson(Map<String, dynamic> json) => Alert(
@@ -22,6 +24,7 @@ class Alert {
         message: json['message'],
         createdAt: DateTime.parse(json['created_at']),
         read: json['read'] ?? false,
+        requestStatus: json['request_status'], // NEW
       );
 
   bool get isToday {

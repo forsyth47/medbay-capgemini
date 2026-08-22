@@ -1,0 +1,279 @@
+import 'package:flutter/material.dart';
+import '../../../models/medicine.dart';
+import '../../../services/supabase_service.dart';
+
+class LoadDispenserPage extends StatefulWidget {
+  const LoadDispenserPage({super.key});
+
+  @override
+  State<LoadDispenserPage> createState() => _LoadDispenserPageState();
+}
+
+class _SlotForm {
+  final TextEditingController nameCtrl;
+  final TextEditingController dosageCtrl;
+  final TextEditingController qtyCtrl;
+  final TextEditingController expiryCtrl;
+  final String? medicineId;
+
+  _SlotForm({
+    required this.nameCtrl,
+    required this.dosageCtrl,
+    required this.qtyCtrl,
+    required this.expiryCtrl,
+    this.medicineId,
+  });
+}
+
+class _LoadDispenserPageState extends State<LoadDispenserPage> {
+  int slotCount = 4;
+  List<_SlotForm> forms = [];
+  bool loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  String _fmt(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  Future<void> _load() async {
+    final uid = SupabaseService.currentUserId!;
+    final count = await SupabaseService.getSlotCount(uid);
+    final meds = await SupabaseService.getMedicines(uid);
+    final defaultExpiry = DateTime.now().add(const Duration(days: 90));
+
+    forms = List.generate(count, (i) {
+      final slotNum = i + 1;
+      Medicine? med;
+      try {
+        med = meds.firstWhere((m) => m.slotNumber == slotNum);
+      } catch (_) {
+        med = null;
+      }
+
+      return _SlotForm(
+        nameCtrl: TextEditingController(text: med?.name ?? ''),
+        dosageCtrl: TextEditingController(text: med?.dosage ?? ''),
+        qtyCtrl: TextEditingController(text: (med?.quantity ?? 25).toString()),
+        expiryCtrl: TextEditingController(text: med?.expiryDate ?? _fmt(defaultExpiry)),
+        medicineId: med?.id,
+      );
+    });
+
+    setState(() {
+      slotCount = count;
+      loading = false;
+    });
+  }
+
+  Future<void> _pickDate(int idx) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().add(const Duration(days: 90)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+    );
+    if (picked != null) {
+      setState(() => forms[idx].expiryCtrl.text = _fmt(picked));
+    }
+  }
+
+  Future<void> _save() async {
+    for (int i = 0; i < forms.length; i++) {
+      final f = forms[i];
+      final qty = int.tryParse(f.qtyCtrl.text) ?? 25;
+      final status = qty == 0 ? 'Empty' : qty <= 5 ? 'Low Stock' : 'Loaded';
+
+      await SupabaseService.upsertMedicine({
+        'slot_number': i + 1,
+        'name': f.nameCtrl.text.isEmpty ? 'Unnamed Medicine' : f.nameCtrl.text,
+        'dosage': f.dosageCtrl.text.isEmpty ? '1 tablet' : f.dosageCtrl.text,
+        'quantity': qty,
+        'max_quantity': 25,
+        'expiry_date': f.expiryCtrl.text,
+        'condition': 'General',
+        'status': status,
+      });
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Dispenser synced & saved!')),
+      );
+      Navigator.pop(context);
+    }
+  }
+
+  Color _statusColor(int qty) {
+    if (qty == 0) return Colors.red;
+    if (qty <= 5) return Colors.orange;
+    return Colors.green;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
+      appBar: AppBar(
+        backgroundColor: Colors.blue.shade700,
+        elevation: 0,
+        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.pop(context)),
+        title: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Load Dispenser', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('Configure medicine slots', style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal)),
+          ],
+        ),
+      ),
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.teal.shade400,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.wifi, color: Colors.white, size: 18),
+                      SizedBox(width: 8),
+                      Text('Device connected · Ready to sync', style: TextStyle(color: Colors.white, fontSize: 13)),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: slotCount,
+                    itemBuilder: (ctx, i) => _slotCard(i),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      onPressed: _save,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue.shade700,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      icon: const Icon(Icons.save),
+                      label: const Text('Save & Sync Device', style: TextStyle(fontSize: 16)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+
+  Widget _slotCard(int idx) {
+    final f = forms[idx];
+    final qty = int.tryParse(f.qtyCtrl.text) ?? 25;
+    final color = _statusColor(qty);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade700,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text('S${idx + 1}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(width: 12),
+                  Text('Slot ${idx + 1}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                ],
+              ),
+              Text(
+                qty == 0 ? 'Empty' : qty <= 5 ? 'Low Stock' : 'Loaded',
+                style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _field('MEDICINE NAME', f.nameCtrl, 'e.g. Metformin 500mg'),
+          const SizedBox(height: 10),
+          _field('DOSAGE', f.dosageCtrl, 'e.g. 1 tablet after meals'),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _field('QUANTITY', f.qtyCtrl, '25', onChanged: () => setState(() {})),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => _pickDate(idx),
+                  child: AbsorbPointer(
+                    child: _field('EXPIRY DATE', f.expiryCtrl, 'YYYY-MM-DD'),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text('Stock Level', style: TextStyle(color: Colors.grey.shade600, fontSize: 11, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: qty / 25,
+              backgroundColor: Colors.grey.shade200,
+              valueColor: AlwaysStoppedAnimation(color),
+              minHeight: 8,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text('$qty/25 tablets', style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
+        ],
+      ),
+    );
+  }
+
+  Widget _field(String label, TextEditingController ctrl, String hint, {VoidCallback? onChanged}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(fontSize: 10, color: Colors.grey.shade500, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 6),
+        TextField(
+          controller: ctrl,
+          onChanged: onChanged != null ? (_) => onChanged() : null,
+          keyboardType: label == 'QUANTITY' ? TextInputType.number : TextInputType.text,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.grey.shade50,
+            hintText: hint,
+            hintStyle: TextStyle(color: Colors.grey.shade400),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          ),
+        ),
+      ],
+    );
+  }
+}

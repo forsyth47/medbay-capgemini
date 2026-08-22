@@ -1,4 +1,4 @@
-import 'package:Medbay/widgets/caretaker_bottom_nav.dart';
+import 'package:medbay/widgets/caretaker_bottom_nav.dart';
 import 'package:flutter/material.dart';
 import '../../models/patient_summary.dart';
 import '../../services/supabase_service.dart';
@@ -25,7 +25,8 @@ class _CaretakerHomePageState extends State<CaretakerHomePage> {
   }
 
   Future<void> _load() async {
-    final data = await SupabaseService.getAssignedPatients('caretaker');
+    final uid = SupabaseService.currentUserId!;
+    final data = await SupabaseService.getAssignedPatients('caretaker', uid);
     setState(() {
       patients = data;
       loading = false;
@@ -88,7 +89,7 @@ class _CaretakerHomePageState extends State<CaretakerHomePage> {
                                   const SizedBox(height: 4),
                                   Text('3 patients are under your care.',
                                       style: TextStyle(
-                                          color: Colors.white.withOpacity(0.8),
+                                          color: Colors.white.withValues(alpha: 0.8),
                                           fontSize: 12)),
                                 ],
                               ),
@@ -151,7 +152,7 @@ class _CaretakerHomePageState extends State<CaretakerHomePage> {
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.15),
+          color: Colors.white.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -191,7 +192,7 @@ class _CaretakerHomePageState extends State<CaretakerHomePage> {
         child: Row(
           children: [
             CircleAvatar(
-              backgroundColor: _primary.withOpacity(0.1),
+              backgroundColor: _primary.withValues(alpha: 0.1),
               child: Icon(Icons.person_outline, color: _primary),
             ),
             const SizedBox(width: 12),

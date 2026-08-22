@@ -1,4 +1,3 @@
-// import 'package:Medbay/widgets/app_bottom_nav.dart';
 import 'package:flutter/material.dart';
 import '../../models/medicine.dart';
 import '../../services/supabase_service.dart';
@@ -13,7 +12,9 @@ class MedicinesPage extends StatefulWidget {
 
 class _MedicinesPageState extends State<MedicinesPage> {
   List<Medicine> medicines = [];
+  int slotCount = 0;
   bool loading = true;
+  double stockPercent(int qty, int max) => max == 0 ? 0 : qty / max;
 
   @override
   void initState() {
@@ -22,8 +23,11 @@ class _MedicinesPageState extends State<MedicinesPage> {
   }
 
   Future<void> _load() async {
-    final data = await SupabaseService.getMedicines(SupabaseService.currentUserId!);
+    final uid = SupabaseService.currentUserId!;
+    final count = await SupabaseService.getSlotCount(uid);
+    final data = await SupabaseService.getMedicines(uid);
     setState(() {
+      slotCount = count;
       medicines = data;
       loading = false;
     });
@@ -31,14 +35,18 @@ class _MedicinesPageState extends State<MedicinesPage> {
 
   Color _statusColor(String status) {
     switch (status) {
-      case 'Loaded':
-        return Colors.green;
-      case 'Low Stock':
-        return Colors.orange;
-      case 'Empty':
-        return Colors.red;
-      default:
-        return Colors.grey;
+      case 'Loaded': return Colors.green;
+      case 'Low Stock': return Colors.orange;
+      case 'Empty': return Colors.red;
+      default: return Colors.grey;
+    }
+  }
+
+  Medicine? _medForSlot(int slot) {
+    try {
+      return medicines.firstWhere((m) => m.slotNumber == slot);
+    } catch (_) {
+      return null;
     }
   }
 
@@ -46,24 +54,18 @@ class _MedicinesPageState extends State<MedicinesPage> {
   Widget build(BuildContext context) {
     final loaded = medicines.where((m) => m.status == 'Loaded').length;
     final low = medicines.where((m) => m.status == 'Low Stock').length;
-    final empty = medicines.where((m) => m.status == 'Empty').length;
+    final empty = slotCount - medicines.length + medicines.where((m) => m.status == 'Empty').length;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         backgroundColor: Colors.blue.shade700,
         elevation: 0,
-        title: const Column(
+        title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Medicine Slots',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            Text(
-              '4 slots available in your dispenser',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
-            ),
+            const Text('Medicine Slots', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('$slotCount slots available in your dispenser', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal)),
           ],
         ),
       ),
@@ -87,8 +89,8 @@ class _MedicinesPageState extends State<MedicinesPage> {
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.all(16),
-                    itemCount: medicines.length,
-                    itemBuilder: (ctx, i) => _slotCard(medicines[i]),
+                    itemCount: slotCount,
+                    itemBuilder: (ctx, i) => _slotCard(i + 1),
                   ),
                 ),
               ],
@@ -102,35 +104,26 @@ class _MedicinesPageState extends State<MedicinesPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.2),
+          color: color.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           children: [
-            Text(
-              val,
-              style: TextStyle(
-                color: color == Colors.blue ? Colors.white : color,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            Text(val, style: TextStyle(color: color == Colors.blue ? Colors.white : color, fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                color: color == Colors.blue ? Colors.white70 : color,
-                fontSize: 11,
-              ),
-            ),
+            Text(label, style: TextStyle(color: color == Colors.blue ? Colors.white70 : color, fontSize: 11)),
           ],
         ),
       ),
     );
   }
 
-  Widget _slotCard(Medicine m) {
-    final color = _statusColor(m.status);
+  Widget _slotCard(int slotNum) {
+    final m = _medForSlot(slotNum);
+    final color = m != null ? _statusColor(m.status) : Colors.grey;
+    final qty = m?.quantity ?? 0;
+    final max = m?.maxQuantity ?? 25;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -147,14 +140,11 @@ class _MedicinesPageState extends State<MedicinesPage> {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
-                  child: Text(
-                    '${m.slotNumber}',
-                    style: TextStyle(color: color, fontWeight: FontWeight.bold),
-                  ),
+                  child: Text('$slotNum', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
                 ),
               ),
               const SizedBox(width: 12),
@@ -162,78 +152,35 @@ class _MedicinesPageState extends State<MedicinesPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      m.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                    Text(
-                      '${m.condition} · ${m.dosage}',
-                      style: TextStyle(
-                        color: Colors.grey.shade500,
-                        fontSize: 12,
-                      ),
-                    ),
+                    Text(m?.name ?? 'Empty Slot', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    if (m != null)
+                      Text('${m.condition} · ${m.dosage}', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
                   ],
                 ),
               ),
-              Text(
-                m.status,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              Text(m?.status ?? 'Empty', style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '${m.quantity} tablets remaining',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-              ),
-              if (m.status == 'Low Stock')
-                Text(
-                  'Refill soon',
-                  style: TextStyle(color: Colors.orange, fontSize: 12),
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: m.stockPercent,
-              backgroundColor: Colors.grey.shade200,
-              valueColor: AlwaysStoppedAnimation(color),
-              minHeight: 8,
+          if (m != null) ...[
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('$qty tablets remaining', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                if (m.status == 'Low Stock') Text('Refill soon', style: TextStyle(color: Colors.orange, fontSize: 12)),
+              ],
             ),
-          ),
-          const SizedBox(height: 8),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: List.generate(
-                m.maxQuantity,
-                (idx) => Container(
-                  margin: const EdgeInsets.only(right: 4),
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: idx < m.quantity
-                        ? color.withOpacity(0.8)
-                        : Colors.grey.shade200,
-                    shape: BoxShape.circle,
-                  ),
-                ),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: stockPercent(qty, max),
+                backgroundColor: Colors.grey.shade200,
+                valueColor: AlwaysStoppedAnimation(color),
+                minHeight: 8,
               ),
             ),
-          ),
+          ],
         ],
       ),
     );

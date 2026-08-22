@@ -58,10 +58,7 @@ class SupabaseService {
     return response.map((j) => Medicine.fromJson(j)).toList();
   }
 
-  static Future<List<Alert>> getAlerts({
-    String? patientId,
-    bool forCurrentUser = false,
-  }) async {
+  static Future<List<Alert>> getAlerts({String? patientId, bool forCurrentUser = false}) async {
     var query = supabase.from('alerts').select();
     if (patientId != null) {
       query = query.eq('patient_id', patientId);
@@ -72,17 +69,78 @@ class SupabaseService {
     return response.map((j) => Alert.fromJson(j)).toList();
   }
 
-  static Future<Map<String, dynamic>?> getPatientDetail(
-    String patientId,
-  ) async {
+  // // ─── Stakeholder: assigned patients ───
+  // static Future<List<PatientSummary>> getAssignedPatients(String role) async {
+  //   // TODO: Replace with real Supabase RPC or join query
+  //   // For hackathon/demo, returning mock data shaped like SQL response
+  //   await Future.delayed(const Duration(milliseconds: 300));
+  //   return [
+  //     PatientSummary(
+  //       id: 'p1',
+  //       name: 'Vijay Kumar',
+  //       age: 54,
+  //       bloodGroup: 'O+',
+  //       adherence: 0.92,
+  //       status: 'Stable',
+  //       isOnline: true,
+  //       lastActive: '8:03 AM',
+  //       nextMedName: 'Vitamin D',
+  //       nextMedTime: '8:00 PM',
+  //       deviceStatus: 'Online',
+  //       stockStatus: 'Good',
+  //     ),
+  //     PatientSummary(
+  //       id: 'p2',
+  //       name: 'Anita Patel',
+  //       age: 48,
+  //       adherence: 0.71,
+  //       status: 'Attention',
+  //       isOnline: true,
+  //       lastActive: '9:15 AM',
+  //       nextMedName: 'Amlodipine',
+  //       nextMedTime: '6:00 PM',
+  //       deviceStatus: 'Online',
+  //       stockStatus: 'Low',
+  //     ),
+  //     PatientSummary(
+  //       id: 'p3',
+  //       name: 'Ravi Singh',
+  //       age: 62,
+  //       adherence: 0.95,
+  //       status: 'Stable',
+  //       isOnline: true,
+  //       lastActive: '7:45 AM',
+  //       nextMedName: 'Metformin',
+  //       nextMedTime: '10:00 PM',
+  //       deviceStatus: 'Online',
+  //       stockStatus: 'Good',
+  //     ),
+  //     PatientSummary(
+  //       id: 'p4',
+  //       name: 'Meera Joshi',
+  //       age: 38,
+  //       adherence: 0.58,
+  //       status: 'Critical',
+  //       isOnline: false,
+  //       lastActive: 'Yesterday',
+  //       nextMedName: 'Atorvastatin',
+  //       nextMedTime: '1:00 PM',
+  //       deviceStatus: 'Offline',
+  //       stockStatus: 'Critical',
+  //     ),
+  //   ];
+  // }
+
+  static Future<Map<String, dynamic>?> getPatientDetail(String patientId) async {
     // TODO: Wire to Supabase
     return null;
   }
+  static Future<void> addSchedule(Map<String, dynamic> data) async {
+    await supabase.from('schedules').insert({...data, 'user_id': currentUserId});
+  }
 
-  // ─── Device ───
-  static Future<Map<String, dynamic>?> getDeviceForPatient(
-    String patientId,
-  ) async {
+    // ─── Device ───
+  static Future<Map<String, dynamic>?> getDeviceForPatient(String patientId) async {
     final access = await supabase
         .from('device_access')
         .select('device_id, devices(*)')
@@ -93,10 +151,7 @@ class SupabaseService {
   }
 
   // ─── Real assigned patients (caretaker & doctor) ───
-  static Future<List<PatientSummary>> getAssignedPatients(
-    String role,
-    String userId,
-  ) async {
+  static Future<List<PatientSummary>> getAssignedPatients(String role, String userId) async {
     try {
       final idColumn = role == 'doctor' ? 'doctor_id' : 'caretaker_id';
       final rels = await supabase
@@ -108,23 +163,16 @@ class SupabaseService {
       final patientIds = rels.map((r) => r['patient_id'] as String).toList();
       if (patientIds.isEmpty) return [];
 
-      final profiles = await supabase
-          .from('profiles')
-          .select()
-          .inFilter('id', patientIds);
-      return profiles
-          .map(
-            (j) => PatientSummary.fromJson({
-              'patient_id': j['id'],
-              'full_name': j['full_name'],
-              'age': j['age'],
-              'blood_group': j['blood_group'],
-              'adherence': 0.92,
-              'status': 'Stable',
-              'is_online': true,
-            }),
-          )
-          .toList();
+      final profiles = await supabase.from('profiles').select().inFilter('id', patientIds);
+      return profiles.map((j) => PatientSummary.fromJson({
+        'patient_id': j['id'],
+        'full_name': j['full_name'],
+        'age': j['age'],
+        'blood_group': j['blood_group'],
+        'adherence': 0.92,
+        'status': 'Stable',
+        'is_online': true,
+      })).toList();
     } catch (e) {
       debugPrint('getAssignedPatients error: $e');
       return [];
@@ -132,10 +180,7 @@ class SupabaseService {
   }
 
   // ─── Stakeholder alerts (caretaker/doctor only see their patients) ───
-  static Future<List<Alert>> getAlertsForStakeholder(
-    String userId,
-    String role,
-  ) async {
+  static Future<List<Alert>> getAlertsForStakeholder(String userId, String role) async {
     final idColumn = role == 'doctor' ? 'doctor_id' : 'caretaker_id';
     final rels = await supabase
         .from('care_relationships')
@@ -145,30 +190,17 @@ class SupabaseService {
     final patientIds = rels.map((r) => r['patient_id'] as String).toList();
     if (patientIds.isEmpty) return [];
 
-    var query = supabase
+    final response = await supabase
         .from('alerts')
         .select()
-        .inFilter('patient_id', patientIds);
-
-    // Caretakers don't need to see request alerts
-    if (role == 'caretaker') {
-      query = query.neq('type', 'request');
-    }
-
-    final response = await query.order('created_at', ascending: false);
+        .inFilter('patient_id', patientIds)
+        .order('created_at', ascending: false);
     return response.map((j) => Alert.fromJson(j)).toList();
   }
 
   // ─── Doctor assigns patient by email ───
-  static Future<bool> requestPatientAccess(
-    String doctorId,
-    String patientEmail,
-  ) async {
-    final patient = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', patientEmail)
-        .maybeSingle();
+  static Future<bool> requestPatientAccess(String doctorId, String patientEmail) async {
+    final patient = await supabase.from('profiles').select('id').eq('email', patientEmail).maybeSingle();
     if (patient == null) return false;
 
     await supabase.from('care_relationships').insert({
@@ -184,30 +216,21 @@ class SupabaseService {
       'patient_id': patient['id'],
       'type': 'request',
       'title': 'Doctor Access Request',
-      'message':
-          'Dr. Rajesh Sharma wants to monitor your medications. Tap to approve.',
+      'message': 'Dr. Rajesh Sharma wants to monitor your medications. Tap to approve.',
       'severity': 'normal',
     });
     return true;
   }
 
   // ─── Patient approves/rejects doctor ───
-  static Future<void> respondToRequest(
-    String relationshipId,
-    bool approve,
-  ) async {
-    await supabase
-        .from('care_relationships')
-        .update({'status': approve ? 'active' : 'rejected'})
-        .eq('id', relationshipId);
+  static Future<void> respondToRequest(String relationshipId, bool approve) async {
+    await supabase.from('care_relationships').update({
+      'status': approve ? 'active' : 'rejected'
+    }).eq('id', relationshipId);
   }
 
   // ─── Demo: caregiver dispenses now ───
-  static Future<void> dispenseNow(
-    String patientId,
-    String medicineId,
-    int slot,
-  ) async {
+  static Future<void> dispenseNow(String patientId, String medicineId, int slot) async {
     await supabase.from('dispense_logs').insert({
       'user_id': patientId,
       'medicine_id': medicineId,
@@ -218,15 +241,8 @@ class SupabaseService {
     });
   }
 
-  static Future<void> respondToAccessRequest(
-    String alertId,
-    bool accept,
-  ) async {
-    final alert = await supabase
-        .from('alerts')
-        .select()
-        .eq('id', alertId)
-        .single();
+  static Future<void> respondToAccessRequest(String alertId, bool accept) async {
+    final alert = await supabase.from('alerts').select().eq('id', alertId).single();
     final patientId = alert['patient_id'] as String;
 
     final rel = await supabase
@@ -239,22 +255,18 @@ class SupabaseService {
         .maybeSingle();
 
     if (rel != null) {
-      await supabase
-          .from('care_relationships')
-          .update({'status': accept ? 'active' : 'rejected'})
-          .eq('id', rel['id']);
+      await supabase.from('care_relationships').update({
+        'status': accept ? 'active' : 'rejected'
+      }).eq('id', rel['id']);
     }
 
-    await supabase
-        .from('alerts')
-        .update({
-          'request_status': accept ? 'accepted' : 'rejected',
-          'read': true,
-        })
-        .eq('id', alertId);
+    await supabase.from('alerts').update({
+      'request_status': accept ? 'accepted' : 'rejected',
+      'read': true,
+    }).eq('id', alertId);
   }
 
-  static Future<int> getSlotCount(String userId) async {
+    static Future<int> getSlotCount(String userId) async {
     final device = await getDeviceForPatient(userId);
     return device?['slot_count'] ?? 4;
   }
@@ -270,77 +282,15 @@ class SupabaseService {
     if (existing != null) {
       await supabase.from('medicines').update(data).eq('id', existing['id']);
     } else {
-      await supabase.from('medicines').insert({
-        ...data,
-        'user_id': currentUserId,
-      });
+      await supabase.from('medicines').insert({...data, 'user_id': currentUserId});
     }
   }
 
-  // ─── Update medicine schedule fields directly (merged from schedules table) ───
-  static Future<void> updateMedicineById(
-    String medicineId,
-    Map<String, dynamic> data,
-  ) async {
-    await supabase.from('medicines').update(data).eq('id', medicineId);
+  static Future<void> updateSchedule(String scheduleId, Map<String, dynamic> data) async {
+    await supabase.from('schedules').update(data).eq('id', scheduleId);
   }
 
-    static Future<void> undoAccessRequest(String alertId) async {
-    final alert = await supabase.from('alerts').select().eq('id', alertId).single();
-    final patientId = alert['patient_id'] as String;
-
-    final rel = await supabase
-        .from('care_relationships')
-        .select()
-        .eq('patient_id', patientId)
-        .or('status.eq.active,status.eq.rejected')
-        .order('created_at', ascending: false)
-        .limit(1)
-        .maybeSingle();
-
-    if (rel != null) {
-      final stakeholderId = rel['doctor_id'] as String? ?? rel['caretaker_id'] as String?;
-
-      if (rel['status'] == 'active' && stakeholderId != null) {
-        final stakeholder = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('id', stakeholderId)
-            .maybeSingle();
-
-        if (stakeholder != null) {
-          final name = stakeholder['full_name'] as String? ?? '';
-          final profile = await supabase.from('profiles').select().eq('id', patientId).single();
-
-          final names = List<String>.from(profile['emergency_name'] ?? []);
-          final relations = List<String>.from(profile['emergency_relation'] ?? []);
-          final phones = List<String>.from(profile['emergency_phone'] ?? []);
-
-          // Remove ALL occurrences of this doctor (backwards to keep indices valid)
-          for (int i = names.length - 1; i >= 0; i--) {
-            if (names[i] == name) {
-              names.removeAt(i);
-              if (i < relations.length) relations.removeAt(i);
-              if (i < phones.length) phones.removeAt(i);
-            }
-          }
-
-          await supabase.from('profiles').update({
-            'emergency_name': names,
-            'emergency_relation': relations,
-            'emergency_phone': phones,
-          }).eq('id', patientId);
-        }
-      }
-
-      await supabase.from('care_relationships').update({
-        'status': 'pending'
-      }).eq('id', rel['id']);
-    }
-
-    await supabase.from('alerts').update({
-      'request_status': 'pending',
-      'read': false,
-    }).eq('id', alertId);
+  static Future<void> createSchedule(Map<String, dynamic> data) async {
+    await supabase.from('schedules').insert({...data, 'user_id': currentUserId});
   }
 }

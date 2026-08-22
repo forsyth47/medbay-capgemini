@@ -4,7 +4,6 @@ import '../../models/user_profile.dart';
 import '../../services/supabase_service.dart';
 import '../../widgets/app_bottom_nav.dart';
 import '../login_page.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -50,14 +49,6 @@ class _ProfilePageState extends State<ProfilePage> {
     if (diff.inMinutes < 5) return Colors.green;
     if (diff.inHours < 1) return Colors.orange;
     return Colors.red;
-  }
-
-  Future<void> _call(String? number) async {
-    if (number == null || number.isEmpty) return;
-    final uri = Uri.parse('tel:${number.replaceAll(RegExp(r'\s+'), '')}');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    }
   }
 
   @override
@@ -223,7 +214,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   '${profile!.emergencyRelations.length > i ? profile!.emergencyRelations[i] : ''} · ${profile!.emergencyPhones.length > i ? profile!.emergencyPhones[i] : ''}'),
                               trailing: IconButton(
                                 icon: const Icon(Icons.phone, color: Colors.green),
-                                onPressed: () => _call(profile!.emergencyPhones.length > i ? profile!.emergencyPhones[i] : null,),
+                                onPressed: () {},
                               ),
                             );
                           }),
@@ -266,7 +257,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   subtitle: Text(c['profiles']['mobile'] ?? ''),
                                   trailing: IconButton(
                                     icon: const Icon(Icons.phone, color: Colors.green),
-                                    onPressed: () => _call(c['profiles']['mobile']),
+                                    onPressed: () {},
                                   ),
                                 )),
                           ],
@@ -302,7 +293,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   '${profile!.caregiverDesignations.length > i ? profile!.caregiverDesignations[i] : ''} · ${profile!.caregiverPhones.length > i ? profile!.caregiverPhones[i] : ''}'),
                               trailing: IconButton(
                                 icon: const Icon(Icons.phone, color: Colors.green),
-                                onPressed: () => _call(profile!.caregiverPhones.length > i ? profile!.caregiverPhones[i] : null,),
+                                onPressed: () {},
                               ),
                             );
                           }),

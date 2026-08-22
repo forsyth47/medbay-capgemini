@@ -49,7 +49,7 @@ class _SplashPageState extends State<SplashPage> {
                   borderRadius: BorderRadius.circular(28),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
+                      color: Colors.black.withValues(alpha: 0.2),
                       blurRadius: 30,
                       spreadRadius: 5,
                     ),
@@ -63,7 +63,7 @@ class _SplashPageState extends State<SplashPage> {
               ),
               const SizedBox(height: 24),
               const Text(
-                'MediDispenser',
+                'Medbay',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 28,
@@ -75,7 +75,7 @@ class _SplashPageState extends State<SplashPage> {
               Text(
                 '"Right Medicine. Right Time. Every Time."',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 13,
                   fontStyle: FontStyle.italic,
                 ),
@@ -94,7 +94,7 @@ class _SplashPageState extends State<SplashPage> {
               Text(
                 'v2.41 · ESP32 IoT Platform',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.4),
+                  color: Colors.white.withValues(alpha: 0.4),
                   fontSize: 12,
                 ),
               ),

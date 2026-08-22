@@ -21,6 +21,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<Medicine> medicines = [];
+  List<Schedule> schedules = [];
   List<Alert> alerts = [];
   Map<String, dynamic>? device;
   bool loading = true;
@@ -44,9 +45,11 @@ class _HomePageState extends State<HomePage> {
     final uid = SupabaseService.currentUserId!;
     final m = await SupabaseService.getMedicines(uid);
     final a = await SupabaseService.getAlerts(forCurrentUser: true);
+    final s = await SupabaseService.getMedicines(uid);
     final d = await SupabaseService.getDeviceForPatient(uid);
     setState(() {
       medicines = m;
+      schedules = s;
       alerts = a.take(2).toList();
       device = d;
       loading = false;
@@ -54,9 +57,7 @@ class _HomePageState extends State<HomePage> {
     _startCountdown();
   }
 
-
-  TimeOfDay? _parseTime(String? t) {
-    if (t == null || t.isEmpty) return null;
+  TimeOfDay? _parseTime(String t) {
     try {
       final parts = t.split(' ');
       if (parts.length != 2) return null;
@@ -72,33 +73,31 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  DateTime _timeToDateTime(String? timeStr) {
-    if (timeStr == null || timeStr.isEmpty) return DateTime.now();
+  DateTime _timeToDateTime(String timeStr) {
     final tod = _parseTime(timeStr);
     if (tod == null) return DateTime.now();
     final now = DateTime.now();
     return DateTime(now.year, now.month, now.day, tod.hour, tod.minute);
   }
 
-  Medicine? get _nextSchedule {
+  Schedule? get _nextSchedule {
     final now = DateTime.now();
-    final medsWithTime = medicines.where((m) => m.time != null && m.time!.isNotEmpty).toList();
-    final sorted = [...medsWithTime]
+    final sorted = [...schedules]
       ..sort(
-        (a, b) => _timeToDateTime(a.time!).compareTo(_timeToDateTime(b.time!)),
+        (a, b) => _timeToDateTime(a.time).compareTo(_timeToDateTime(b.time)),
       );
-    for (final med in sorted) {
-      if (_timeToDateTime(med.time!).isAfter(now)) return med;
+    for (final sch in sorted) {
+      if (_timeToDateTime(sch.time).isAfter(now)) return sch;
     }
     return sorted.isNotEmpty ? sorted.first : null;
   }
 
   int get _takenDoses {
     final now = DateTime.now();
-    return medicines.where((m) => m.time != null && _timeToDateTime(m.time!).isBefore(now)).length;
+    return schedules.where((s) => _timeToDateTime(s.time).isBefore(now)).length;
   }
 
-  int get _totalDoses => medicines.where((m) => m.time != null && m.time!.isNotEmpty).length;
+  int get _totalDoses => schedules.length;
 
   void _startCountdown() {
     _timer?.cancel();
@@ -161,6 +160,22 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final next = _nextSchedule;
+    final nextMed = next != null
+        ? medicines.firstWhere(
+            (m) => m.id == next.medicineId,
+            orElse: () => Medicine(
+              id: '',
+              name: 'Medication',
+              dosage: '',
+              slotNumber: 1,
+              quantity: 0,
+              expiryDate: '',
+              condition: '',
+              status: '',
+            ),
+          )
+        : null;
+
     final deviceStatus = device?['status'] as Map<String, dynamic>? ?? {};
     final lastSeen = DateTime.tryParse(device?['last_seen'] ?? '');
     final battery = deviceStatus['battery']?.toString() ?? '--';
@@ -251,7 +266,7 @@ class _HomePageState extends State<HomePage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (next != null)
+                          if (next != null && nextMed != null)
                             Container(
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
@@ -291,7 +306,7 @@ class _HomePageState extends State<HomePage> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            next.name,
+                                            nextMed.name,
                                             style: const TextStyle(
                                               color: Colors.white,
                                               fontSize: 18,
@@ -423,12 +438,27 @@ class _HomePageState extends State<HomePage> {
                             ],
                           ),
                           const SizedBox(height: 8),
-                          ...medicines.where((m) => m.time != null && m.time!.isNotEmpty).map((med) {
-                            final isTaken = _timeToDateTime(med.time!).isBefore(DateTime.now());
+                          ...schedules.map((s) {
+                            final med = medicines.firstWhere(
+                              (m) => m.id == s.medicineId,
+                              orElse: () => Medicine(
+                                id: '',
+                                name: 'Unknown',
+                                dosage: '',
+                                slotNumber: s.slotNumber,
+                                quantity: 0,
+                                expiryDate: '',
+                                condition: '',
+                                status: '',
+                              ),
+                            );
+                            final isTaken = _timeToDateTime(
+                              s.time,
+                            ).isBefore(DateTime.now());
                             return _scheduleItem(
                               med.name,
-                              'Slot ${med.slotNumber}',
-                              med.time!,
+                              'Slot ${s.slotNumber}',
+                              s.time,
                               isTaken,
                             );
                           }),
@@ -607,7 +637,7 @@ class _HomePageState extends State<HomePage> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8),
+            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8),
           ],
         ),
         child: Row(
@@ -615,7 +645,7 @@ class _HomePageState extends State<HomePage> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
+                color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(icon, color: color, size: 20),

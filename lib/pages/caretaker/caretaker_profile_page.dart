@@ -1,9 +1,6 @@
-import 'package:Medbay/widgets/caretaker_bottom_nav.dart';
+import 'package:medbay/widgets/caretaker_bottom_nav.dart';
 import 'package:flutter/material.dart';
 import '../../services/supabase_service.dart';
-import 'caretaker_home_page.dart';
-import 'caretaker_patients_page.dart';
-import 'caretaker_alerts_page.dart';
 import '../login_page.dart';
 
 class CaretakerProfilePage extends StatelessWidget {
@@ -36,7 +33,7 @@ class CaretakerProfilePage extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 28,
-                    backgroundColor: _primary.withOpacity(0.1),
+                    backgroundColor: _primary.withValues(alpha: 0.1),
                     child: Icon(Icons.person, size: 28, color: _primary),
                   ),
                   const SizedBox(width: 16),

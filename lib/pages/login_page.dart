@@ -91,7 +91,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    'MediDispenser',
+                    'Medbay',
                     style: TextStyle(
                         color: Colors.white,
                         fontSize: 22,
@@ -101,13 +101,13 @@ class _LoginPageState extends State<LoginPage> {
                   Text(
                     '"Right Medicine. Right Time. Every Time."',
                     style: TextStyle(
-                        color: Colors.white.withOpacity(0.7), fontSize: 12),
+                        color: Colors.white.withValues(alpha: 0.7), fontSize: 12),
                   ),
                   const SizedBox(height: 24),
                   // Role selector
                   Text('CONTINUE AS',
                       style: TextStyle(
-                          color: Colors.white.withOpacity(0.6),
+                          color: Colors.white.withValues(alpha: 0.6),
                           fontSize: 11,
                           letterSpacing: 1.2)),
                   const SizedBox(height: 12),
@@ -220,9 +220,9 @@ class _LoginPageState extends State<LoginPage> {
         width: 90,
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: active ? Colors.white.withOpacity(0.15) : Colors.transparent,
+          color: active ? Colors.white.withValues(alpha: 0.15) : Colors.transparent,
           border: Border.all(
-            color: active ? Colors.white : Colors.white.withOpacity(0.3),
+            color: active ? Colors.white : Colors.white.withValues(alpha: 0.3),
             width: active ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(16),

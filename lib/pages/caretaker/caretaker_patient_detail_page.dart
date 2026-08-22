@@ -1,3 +1,4 @@
+import 'package:medbay/services/supabase_service.dart';
 import 'package:flutter/material.dart';
 
 class CaretakerPatientDetailPage extends StatelessWidget {
@@ -83,7 +84,32 @@ class CaretakerPatientDetailPage extends StatelessWidget {
             const SizedBox(height: 20),
             const Text("Today's Medication",
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  // Demo: dispense next upcoming med
+                  await SupabaseService.dispenseNow(patientId, 'dummy-med-id', 1);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Dispense command sent to device!')),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.medication_liquid),
+                label: const Text('Dispense Now'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
             const SizedBox(height: 12),
+
             ..._meds.map((m) => _medRow(m)),
             const SizedBox(height: 20),
             const Text('Dispenser Status',

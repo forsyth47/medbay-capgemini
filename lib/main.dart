@@ -45,7 +45,8 @@ Future<void> navigateToRoleHome(BuildContext context) async {
       : profile.isCaretaker
           ? const CaretakerHomePage()
           : const HomePage(); // existing patient home
-
+  // guard using mounted check.
+  if (!context.mounted) return;
   Navigator.pushAndRemoveUntil(
     context,
     MaterialPageRoute(builder: (_) => page),
